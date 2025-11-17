@@ -20,7 +20,7 @@ def _():
 @app.cell
 def _(pd):
     meteo_data = pd.read_csv(
-        "data/meteo-summary.csv", index_col=0, parse_dates=["date"]
+        "https://raw.githubusercontent.com/ber2/meteoenergy/refs/heads/master/data/meteo-summary.csv", index_col=0, parse_dates=["date"]
     )
     return (meteo_data,)
 
@@ -34,7 +34,7 @@ def _(meteo_data):
 @app.cell
 def _(pd):
     pricing_data = pd.read_csv(
-        "data/pvpc-summary.csv", index_col=0, parse_dates=["date"]
+        "https://raw.githubusercontent.com/ber2/meteoenergy/refs/heads/master/data/pvpc-summary.csv", index_col=0, parse_dates=["date"]
     )
     return (pricing_data,)
 
