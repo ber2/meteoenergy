@@ -20,7 +20,9 @@ def _():
 @app.cell
 def _(pd):
     meteo_data = pd.read_csv(
-        "https://raw.githubusercontent.com/ber2/meteoenergy/refs/heads/master/data/meteo-summary.csv", index_col=0, parse_dates=["date"]
+        "https://raw.githubusercontent.com/ber2/meteoenergy/refs/heads/master/data/meteo-summary.csv",
+        index_col=0,
+        parse_dates=["date"],
     )
     return (meteo_data,)
 
@@ -34,7 +36,9 @@ def _(meteo_data):
 @app.cell
 def _(pd):
     pricing_data = pd.read_csv(
-        "https://raw.githubusercontent.com/ber2/meteoenergy/refs/heads/master/data/pvpc-summary.csv", index_col=0, parse_dates=["date"]
+        "https://raw.githubusercontent.com/ber2/meteoenergy/refs/heads/master/data/pvpc-summary.csv",
+        index_col=0,
+        parse_dates=["date"],
     )
     return (pricing_data,)
 
@@ -84,15 +88,30 @@ def _(heatmap_df):
 
 
 @app.cell
+def _(heatmap_df):
+    heatmap_df.columns = [
+        "PVPC - 2.0.DHA",
+        "PVPC - 2.0.DHS",
+        "PVPC - 2.0A",
+        "Prod Cost - 2.0.DHA",
+        "Prod Cost - 2.0.DHS",
+        "Prod Cost - 2.0A",
+    ]
+    return
+
+
+@app.cell
 def _(heatmap_df, px):
     fig = px.imshow(
         heatmap_df,
         text_auto=True,
         template="plotly",
         title="Correlation between PVPC and Production Cost across tolls",
+        width=800,
+        height=800,
     )
 
-    fig.update_xaxes(showticklabels=False)
+    # fig.update_xaxes(showticklabels=False)
     fig.update_yaxes(showticklabels=False)
     fig.show()
     return
@@ -121,7 +140,13 @@ def _(meteo_data, pd, pricing_data_simplified):
 
 @app.cell
 def _(df):
-    df.date.min(), df.date.max()
+    df
+    return
+
+
+@app.cell
+def _():
+    # df.columns = ["date", "Rainfall (mm)", "Sunshine (MJ/m2)", "TMax (C)", "TAvg (C)", "TMin (C)", "Windspeed (m/s)", "Price"]
     return
 
 
@@ -137,7 +162,8 @@ def _(df, px):
         df.drop("date", axis=1).corr(),
         text_auto=True,
         template="plotly",
-        height=1000,
+        height=800,
+        width=800,
         title="Correlations between weather conditions and price",
     )
     return
@@ -177,6 +203,12 @@ def _(df):
 
 
 @app.cell
+def _(df):
+    df.columns
+    return
+
+
+@app.cell
 def _(df, px):
     px.imshow(
         df[
@@ -187,10 +219,21 @@ def _(df, px):
                 "rainfall_monthly_mm",
                 "rainfall_quarterly_mm",
             ]
-        ].corr(),
+        ]
+        .rename(
+            columns={
+                "price": "Price",
+                "rainfall_mm": "Daily Rain",
+                "rainfall_weekly_mm": "Weekly Rain",
+                "rainfall_monthly_mm": "Monthly Rain",
+                "rainfall_quarterly_mm": "Quarterly Rain",
+            }
+        )
+        .corr(),
         text_auto=True,
         template="plotly",
-        height=1000,
+        height=800,
+        width=800,
         title="Correlations between cumulative rainfall and price",
     )
     return

@@ -33,10 +33,14 @@ def _():
 @app.cell
 def _(pd):
     meteo_data = pd.read_csv(
-        "https://raw.githubusercontent.com/ber2/meteoenergy/refs/heads/master/data/meteo-summary.csv", index_col=0, parse_dates=["date"]
+        "https://raw.githubusercontent.com/ber2/meteoenergy/refs/heads/master/data/meteo-summary.csv",
+        index_col=0,
+        parse_dates=["date"],
     )
     pricing_data = pd.read_csv(
-        "https://raw.githubusercontent.com/ber2/meteoenergy/refs/heads/master/data/pvpc-summary.csv", index_col=0, parse_dates=["date"]
+        "https://raw.githubusercontent.com/ber2/meteoenergy/refs/heads/master/data/pvpc-summary.csv",
+        index_col=0,
+        parse_dates=["date"],
     )
     pricing_data_simplified = pricing_data[pricing_data.toll == "2.0.DHA"][
         ["date", "pvpc_eur_MWh"]
@@ -82,7 +86,7 @@ def _(df, selected_features):
 
 @app.cell
 def _(X, train_test_split, y):
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
     return X_test, X_train, y_test, y_train
 
 
@@ -186,21 +190,6 @@ def _(
         mean_absolute_error(y_test_time, y_pred_time),
         mean_squared_error(y_test_time, y_pred_time),
     )
-    return
-
-
-@app.cell
-def _():
-    return
-
-
-@app.cell
-def _():
-    return
-
-
-@app.cell
-def _():
     return
 
 

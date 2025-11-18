@@ -24,7 +24,9 @@ def _():
 @app.cell
 def _(pd):
     meteo_data = pd.read_csv(
-        "https://raw.githubusercontent.com/ber2/meteoenergy/refs/heads/master/data/meteo-summary.csv", index_col=0, parse_dates=["date"]
+        "https://raw.githubusercontent.com/ber2/meteoenergy/refs/heads/master/data/meteo-summary.csv",
+        index_col=0,
+        parse_dates=["date"],
     )
     return (meteo_data,)
 
@@ -32,7 +34,9 @@ def _(pd):
 @app.cell
 def _(pd):
     pricing_data = pd.read_csv(
-        "https://raw.githubusercontent.com/ber2/meteoenergy/refs/heads/master/data/pvpc-summary.csv", index_col=0, parse_dates=["date"]
+        "https://raw.githubusercontent.com/ber2/meteoenergy/refs/heads/master/data/pvpc-summary.csv",
+        index_col=0,
+        parse_dates=["date"],
     )
     return (pricing_data,)
 
@@ -57,20 +61,32 @@ def _(meteo_data, pd, pricing_data_simplified):
 
 
 @app.cell
-def _(mo):
+def _():
+    labels = {
+        "price": "€",
+        "weather_type": "Extremal",
+        "windspeed_m_s": "Wind (m/s)",
+        "rainfall_mm": "Daily rain (mm)",
+        "sunshine_MJ_daym2": "Sunshine (MJ/m^2)",
+        "tmax_C": "Max Temp (C)",
+        "tmed_C": "Avg Temp (C)",
+        "tmin_C": "Min Temp(C)",
+        "rainfall_weekly_mm": "Weekly rain (mm)",
+        "rainfall_monthly_mm": "Monthly rain (mm)",
+        "rainfall_quarterly_mm": "Quarterly rain (mm)",
+    }
+
+    rev = {v: k for k, v in labels.items()}
+    _ = rev.pop("€")
+    _ = rev.pop("Extremal")
+    return labels, rev
+
+
+@app.cell
+def _(mo, rev):
     weather_col = mo.ui.dropdown(
-        options=[
-            "rainfall_mm",
-            "sunshine_MJ_daym2",
-            "tmax_C",
-            "tmed_C",
-            "tmin_C",
-            "windspeed_m_s",
-            "rainfall_weekly_mm",
-            "rainfall_monthly_mm",
-            "rainfall_quarterly_mm",
-        ],
-        value="windspeed_m_s",
+        options=list(rev),
+        value="Wind (m/s)",
         label="Weather condition",
         allow_select_none=False,
     )
@@ -101,44 +117,32 @@ def _(controls, mo):
 
 
 @app.cell
-def _(df_base, perc, weather_col):
-    threshold = df_base[weather_col.value].quantile(q=perc.value)
+def _(rev, weather_col):
+    weather_col_name = rev[weather_col.value]
+    return (weather_col_name,)
+
+
+@app.cell
+def _(df_base, perc, weather_col_name):
+    threshold = df_base[weather_col_name].quantile(q=perc.value)
     df = df_base.copy()
-    df["weather_type"] = df[weather_col.value].apply(
+    df["weather_type"] = df[weather_col_name].apply(
         lambda x: "High" if x >= threshold else "Low"
     )
     return df, threshold
 
 
 @app.cell
-def _():
-    labels = {
-        "price": "€",
-        "weather_type": "Extremal",
-        "windspeed_m_s": "Wind (m/s)",
-        "rainfall_mm": "Daily rain (mm)",
-        "sunshine_MJ_daym2": "Sunshine (MJ/m^2)",
-        "tmax_C": "Max Temp (C)",
-        "tmed_C": "Avg Temp (C)",
-        "tmin_C": "Min Temp(C)",
-        "rainfall_weekly_mm": "Weekly rain (mm)",
-        "rainfall_monthly_mm": "Monthly rain (mm)",
-        "rainfall_quarterly_mm": "Quarterly rain (mm)",
-    }
-    return (labels,)
-
-
-@app.cell
-def _(df, labels, px, weather_col):
+def _(df, labels, px, weather_col, weather_col_name):
     fig_scatter = px.scatter(
         df,
-        x=weather_col.value,
+        x=weather_col_name,
         y="price",
         range_y=[0, df.price.max() * 1.15],
         color="weather_type",
-        color_discrete_map={"High": "goldenrod", "Low": "#00A"},
+        color_discrete_map={"High": "#F11", "Low": "#11F"},
         template="plotly",
-        title=f"Relationship between <b>{labels[weather_col.value]}</b> and price",
+        title=f"Relationship between <b>{weather_col.value}</b> and price",
         labels=labels,
         opacity=0.5,
         # trendline="ols",
@@ -155,7 +159,7 @@ def _(df, labels, px):
         y="price",
         range_y=[0, df.price.max() * 1.15],
         color="weather_type",
-        color_discrete_map={"High": "goldenrod", "Low": "#00A"},
+        color_discrete_map={"High": "#F11", "Low": "#11F"},
         template="plotly",
         title="Evolution of prices",
         opacity=0.5,
@@ -178,9 +182,9 @@ def _(fig_evo):
 
 
 @app.cell
-def _(df, threshold, weather_col):
-    high_values = df[df[weather_col.value] >= threshold].price
-    low_values = df[df[weather_col.value] < threshold].price
+def _(df, threshold, weather_col_name):
+    high_values = df[df[weather_col_name] >= threshold].price
+    low_values = df[df[weather_col_name] < threshold].price
     return high_values, low_values
 
 
@@ -200,34 +204,36 @@ def _(high_values, low_values, ttest_ind):
 
 
 @app.cell
-def _(high_mean, labels, low_mean, mo, p_val, perc, stat, weather_col):
+def _(high_mean, low_mean, mo, perc, weather_col):
     mo.md(
         f"""
-    # T-test results
-
-    Weather condition: {labels[weather_col.value]}\n
-    Splitting at percentile: {perc.value}
-
-    High mean price = {high_mean}\n
-    Low mean price = {low_mean}\n
-    Difference = {high_mean - low_mean}\n
-    \n
-    T-Statistic = {stat}\n
-    p-value = {p_val}\n
+    | Summary | {weather_col.value} |
+    |----------------|---------------------|
+    | Split at perc |  {perc.value} |
+    | High mean | {high_mean} |
+    | Low mean | {low_mean} |
+    | Difference | {high_mean - low_mean} |
     """
     )
     return
 
 
 @app.cell
-def _(alpha, mo, p_val):
-    if p_val < float(alpha.value):
-        text = mo.md(
-            "Since $p < \\alpha$, we reject the null hypothesis that the two groups come from the same distribution"
-        )
-    else:
-        text = mo.md("Since $p >= \\alpha$, we fail to reject the null hypothesis")
-    text
+def _(alpha, mo, p_val, stat, weather_col):
+    mo.md(
+        f"""
+    | T-test results | {weather_col.value} |
+    |-----------|-------------------------|
+    | T-Statistic | {stat} |
+    | p-value | {p_val} |
+    | $p < \\alpha$ | {"true" if p_val < float(alpha.value) else "false"} |
+    """
+    )
+    return
+
+
+@app.cell
+def _():
     return
 
 
